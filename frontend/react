@@ -1,0 +1,1066 @@
+import React, { useState, useEffect, createContext, useContext } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { User, BookOpen, TrendingUp, Clock, Award, Users, Home, Settings, LogOut, Play, Brain, Eye, Lightbulb, Target } from 'lucide-react';
+
+// Context for authentication and global state
+const AppContext = createContext();
+
+const useAppContext = () => {
+  const context = useContext(AppContext);
+  if (!context) {
+    throw new Error('useAppContext must be used within an AppProvider');
+  }
+  return context;
+};
+
+// API service
+const API_BASE_URL = 'http://localhost:5000/api';
+
+const apiService = {
+  async login(credentials) {
+    const response = await fetch(`${API_BASE_URL}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(credentials),
+    });
+    return response.json();
+  },
+
+  async register(userData) {
+    const response = await fetch(`${API_BASE_URL}/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData),
+    });
+    return response.json();
+  },
+
+  async getStudentAnalytics(token) {
+    const response = await fetch(`${API_BASE_URL}/student/analytics`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    return response.json();
+  },
+
+  async startAssessment(token, data) {
+    const response = await fetch(`${API_BASE_URL}/start-assessment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+
+  async submitAnswer(token, data) {
+    const response = await fetch(`${API_BASE_URL}/submit-answer`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+
+  async getTeacherStudents(token) {
+    const response = await fetch(`${API_BASE_URL}/teacher/students`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    return response.json();
+  },
+
+  async getParentChildren(token) {
+    const response = await fetch(`${API_BASE_URL}/parent/children`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    return response.json();
+  },
+
+  async initDatabase() {
+    const response = await fetch(`${API_BASE_URL}/init-db`, {
+      method: 'POST',
+    });
+    return response.json();
+  }
+};
+
+// Login Component
+const LoginForm = ({ onLogin }) => {
+  const [isLogin, setIsLogin] = useState(true);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    name: '',
+    role: 'student',
+    grade: '',
+    school: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      let result;
+      if (isLogin) {
+        result = await apiService.login({
+          email: formData.email,
+          password: formData.password
+        });
+      } else {
+        result = await apiService.register(formData);
+        if (result.message === 'User registered successfully') {
+          result = await apiService.login({
+            email: formData.email,
+            password: formData.password
+          });
+        }
+      }
+
+      if (result.token) {
+        localStorage.setItem('token', result.token);
+        localStorage.setItem('user', JSON.stringify(result.user));
+        onLogin(result.user, result.token);
+      } else {
+        setError(result.message || 'Authentication failed');
+      }
+    } catch (err) {
+      setError('Network error. Please try again.');
+      console.error('Auth error:', err);
+    }
+
+    setLoading(false);
+  };
+
+  const handleInputChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-xl shadow-2xl p-8">
+        <div className="text-center mb-8">
+          <Brain className="w-16 h-16 text-indigo-600 mx-auto mb-4" />
+          <h1 className="text-3xl font-bold text-gray-900">AdaptLearn</h1>
+          <p className="text-gray-600">Personalized Learning Platform</p>
+        </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {!isLogin && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Full Name
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                required
+              />
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Email
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Password
+            </label>
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              required
+            />
+          </div>
+
+          {!isLogin && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Role
+                </label>
+                <select
+                  name="role"
+                  value={formData.role}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                  <option value="student">Student</option>
+                  <option value="teacher">Teacher</option>
+                  <option value="parent">Parent</option>
+                </select>
+              </div>
+
+              {formData.role === 'student' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Grade
+                    </label>
+                    <input
+                      type="text"
+                      name="grade"
+                      value={formData.grade}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="e.g., 8th Grade"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      School
+                    </label>
+                    <input
+                      type="text"
+                      name="school"
+                      value={formData.school}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="School Name"
+                    />
+                  </div>
+                </>
+              )}
+
+              {formData.role === 'teacher' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    School
+                  </label>
+                  <input
+                    type="text"
+                    name="school"
+                    value={formData.school}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="School Name"
+                  />
+                </div>
+              )}
+            </>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Sign Up')}
+          </button>
+        </form>
+
+        <div className="mt-6 text-center">
+          <button
+            type="button"
+            onClick={() => setIsLogin(!isLogin)}
+            className="text-indigo-600 hover:text-indigo-800 font-medium"
+          >
+            {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Student Dashboard Component
+const StudentDashboard = () => {
+  const { user, token } = useAppContext();
+  const [analytics, setAnalytics] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const data = await apiService.getStudentAnalytics(token);
+        setAnalytics(data);
+      } catch (error) {
+        console.error('Error fetching analytics:', error);
+      }
+      setLoading(false);
+    };
+
+    fetchAnalytics();
+  }, [token]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  const skillData = analytics ? [
+    { name: 'Listening', score: analytics.skill_scores.listening, icon: <Eye className="w-5 h-5" /> },
+    { name: 'Grasping', score: analytics.skill_scores.grasping, icon: <Brain className="w-5 h-5" /> },
+    { name: 'Retention', score: analytics.skill_scores.retention, icon: <BookOpen className="w-5 h-5" /> },
+    { name: 'Application', score: analytics.skill_scores.application, icon: <Target className="w-5 h-5" /> }
+  ] : [];
+
+  const chartData = skillData.map(skill => ({
+    name: skill.name,
+    score: skill.score
+  }));
+
+  const getScoreColor = (score) => {
+    if (score >= 80) return 'text-green-600 bg-green-100';
+    if (score >= 60) return 'text-yellow-600 bg-yellow-100';
+    return 'text-red-600 bg-red-100';
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Welcome back, {user.name}!</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {skillData.map((skill, index) => (
+            <div key={index} className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center space-x-2">
+                  {skill.icon}
+                  <span className="font-medium text-gray-700">{skill.name}</span>
+                </div>
+                <span className={`px-2 py-1 rounded-full text-sm font-medium ${getScoreColor(skill.score)}`}>
+                  {skill.score.toFixed(0)}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${skill.score}%` }}
+                ></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Skills Overview</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis domain={[0, 100]} />
+              <Tooltip />
+              <Bar dataKey="score" fill="#4F46E5" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Assessments</h3>
+          {analytics && analytics.recent_assessments.length > 0 ? (
+            <div className="space-y-3">
+              {analytics.recent_assessments.map((assessment) => (
+                <div key={assessment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="font-medium text-gray-900">{assessment.subject}</p>
+                    <p className="text-sm text-gray-600">
+                      {new Date(assessment.completed_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreColor(assessment.score)}`}>
+                    {assessment.score.toFixed(0)}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-600">No assessments completed yet.</p>
+          )}
+        </div>
+      </div>
+
+      {analytics && analytics.weak_areas.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Areas for Improvement</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {analytics.weak_areas.map((area, index) => (
+              <div key={index} className={`p-4 rounded-lg border-2 ${
+                area.severity === 'high' ? 'border-red-200 bg-red-50' : 'border-yellow-200 bg-yellow-50'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium capitalize">{area.skill}</h4>
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${
+                    area.severity === 'high' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {area.severity} priority
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 mt-1">
+                  Current score: {area.score.toFixed(0)}%
+                </p>
+                <button className="mt-2 text-sm bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700 transition-colors">
+                  Practice {area.skill}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Assessment Component
+const AssessmentComponent = () => {
+  const { token } = useAppContext();
+  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [assessmentId, setAssessmentId] = useState(null);
+  const [selectedAnswer, setSelectedAnswer] = useState('');
+  const [currentLevel, setCurrentLevel] = useState(1);
+  const [questionCount, setQuestionCount] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
+  const [finalScore, setFinalScore] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [startTime, setStartTime] = useState(null);
+
+  const startAssessment = async () => {
+    setLoading(true);
+    try {
+      const result = await apiService.startAssessment(token, { subject_id: 1 });
+      setAssessmentId(result.assessment_id);
+      setCurrentQuestion(result.question);
+      setStartTime(Date.now());
+      setQuestionCount(1);
+    } catch (error) {
+      console.error('Error starting assessment:', error);
+    }
+    setLoading(false);
+  };
+
+  const submitAnswer = async () => {
+    if (!selectedAnswer) return;
+
+    setLoading(true);
+    const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+    
+    try {
+      const result = await apiService.submitAnswer(token, {
+        assessment_id: assessmentId,
+        question_id: currentQuestion.id,
+        answer: selectedAnswer,
+        time_taken: timeSpent
+      });
+
+      if (result.assessment_completed) {
+        setIsComplete(true);
+        setFinalScore(result.score);
+      } else {
+        setCurrentQuestion(result.next_question);
+        setCurrentLevel(result.current_level);
+        setQuestionCount(prev => prev + 1);
+        setSelectedAnswer('');
+        setStartTime(Date.now());
+      }
+    } catch (error) {
+      console.error('Error submitting answer:', error);
+    }
+    setLoading(false);
+  };
+
+  if (isComplete) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+          <Award className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">Assessment Complete!</h2>
+          <div className="text-6xl font-bold text-indigo-600 mb-4">
+            {finalScore?.toFixed(0)}%
+          </div>
+          <p className="text-gray-600 mb-6">
+            You answered {questionCount} questions across {currentLevel} difficulty levels.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors"
+          >
+            Take Another Assessment
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentQuestion) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+          <Brain className="w-16 h-16 text-indigo-600 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Adaptive Assessment</h2>
+          <p className="text-gray-600 mb-6">
+            This assessment will adapt to your skill level. Questions will become easier or harder based on your responses.
+          </p>
+          <button
+            onClick={startAssessment}
+            disabled={loading}
+            className="bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+          >
+            {loading ? 'Starting...' : 'Start Assessment'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto">
+      <div className="bg-white rounded-lg shadow-lg p-8">
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-sm text-gray-600">Question {questionCount}</span>
+            <span className="text-sm font-medium text-indigo-600">Level {currentLevel}</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${(questionCount / 20) * 100}%` }}
+            ></div>
+          </div>
+        </div>
+
+        <h3 className="text-xl font-semibold text-gray-900 mb-6">
+          {currentQuestion.text}
+        </h3>
+
+        <div className="space-y-3 mb-6">
+          {currentQuestion.type === 'multiple_choice' && currentQuestion.options ? (
+            currentQuestion.options.map((option, index) => (
+              <label
+                key={index}
+                className={`block p-4 border rounded-lg cursor-pointer transition-colors ${
+                  selectedAnswer === option
+                    ? 'border-indigo-600 bg-indigo-50'
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="answer"
+                  value={option}
+                  checked={selectedAnswer === option}
+                  onChange={(e) => setSelectedAnswer(e.target.value)}
+                  className="sr-only"
+                />
+                <span className="text-gray-900">{option}</span>
+              </label>
+            ))
+          ) : (
+            <input
+              type="text"
+              value={selectedAnswer}
+              onChange={(e) => setSelectedAnswer(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="Enter your answer..."
+            />
+          )}
+        </div>
+
+        <button
+          onClick={submitAnswer}
+          disabled={!selectedAnswer || loading}
+          className="w-full bg-indigo-600 text-white py-3 px-6 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {loading ? 'Submitting...' : 'Submit Answer'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Teacher Dashboard Component
+const TeacherDashboard = () => {
+  const { user, token } = useAppContext();
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const data = await apiService.getTeacherStudents(token);
+        setStudents(data.students || []);
+      } catch (error) {
+        console.error('Error fetching students:', error);
+      }
+      setLoading(false);
+    };
+
+    fetchStudents();
+  }, [token]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  const getScoreColor = (score) => {
+    if (score >= 80) return 'text-green-600';
+    if (score >= 60) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Teacher Dashboard</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-blue-50 rounded-lg p-6 text-center">
+            <Users className="w-12 h-12 text-blue-600 mx-auto mb-2" />
+            <div className="text-2xl font-bold text-gray-900">{students.length}</div>
+            <div className="text-gray-600">Total Students</div>
+          </div>
+          <div className="bg-green-50 rounded-lg p-6 text-center">
+            <TrendingUp className="w-12 h-12 text-green-600 mx-auto mb-2" />
+            <div className="text-2xl font-bold text-gray-900">
+              {students.filter(s => s.recent_assessment_count > 0).length}
+            </div>
+            <div className="text-gray-600">Active This Week</div>
+          </div>
+          <div className="bg-yellow-50 rounded-lg p-6 text-center">
+            <Lightbulb className="w-12 h-12 text-yellow-600 mx-auto mb-2" />
+            <div className="text-2xl font-bold text-gray-900">
+              {students.reduce((sum, s) => sum + s.weak_areas.length, 0)}
+            </div>
+            <div className="text-gray-600">Areas Needing Help</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow">
+        <div className="p-6 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">Student Performance</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Student
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Listening
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Grasping
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Retention
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Application
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Weak Areas
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {students.map((student) => (
+                <tr key={student.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{student.name}</div>
+                      <div className="text-sm text-gray-500">{student.grade}</div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`text-sm font-medium ${getScoreColor(student.skill_scores.listening)}`}>
+                      {student.skill_scores.listening.toFixed(0)}%
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`text-sm font-medium ${getScoreColor(student.skill_scores.grasping)}`}>
+                      {student.skill_scores.grasping.toFixed(0)}%
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`text-sm font-medium ${getScoreColor(student.skill_scores.retention)}`}>
+                      {student.skill_scores.retention.toFixed(0)}%
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`text-sm font-medium ${getScoreColor(student.skill_scores.application)}`}>
+                      {student.skill_scores.application.toFixed(0)}%
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-wrap gap-1">
+                      {student.weak_areas.map((area, index) => (
+                        <span
+                          key={index}
+                          className={`px-2 py-1 text-xs rounded-full ${
+                            area.severity === 'high'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}
+                        >
+                          {area.skill}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Parent Dashboard Component
+const ParentDashboard = () => {
+  const { user, token } = useAppContext();
+  const [children, setChildren] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchChildren = async () => {
+      try {
+        const data = await apiService.getParentChildren(token);
+        setChildren(data.children || []);
+      } catch (error) {
+        console.error('Error fetching children:', error);
+      }
+      setLoading(false);
+    };
+
+    fetchChildren();
+  }, [token]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  const getTrendIcon = (trend) => {
+    if (trend === 'improving') return <TrendingUp className="w-5 h-5 text-green-500" />;
+    if (trend === 'declining') return <TrendingUp className="w-5 h-5 text-red-500 transform rotate-180" />;
+    return <TrendingUp className="w-5 h-5 text-gray-500 transform rotate-90" />;
+  };
+
+  const getScoreColor = (score) => {
+    if (score >= 80) return 'text-green-600';
+    if (score >= 60) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Parent Dashboard</h2>
+        <p className="text-gray-600">Monitor your children's learning progress and identify areas where they need support.</p>
+      </div>
+
+      {children.map((child) => (
+        <div key={child.id} className="bg-white rounded-lg shadow">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">{child.name}</h3>
+                <p className="text-gray-600">{child.grade} • {child.school}</p>
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-indigo-600">{child.attendance_rate.toFixed(0)}%</div>
+                  <div className="text-sm text-gray-600">Attendance</div>
+                </div>
+                <div className="flex items-center space-x-1">
+                  {getTrendIcon(child.progress_trend)}
+                  <span className="text-sm text-gray-600 capitalize">{child.progress_trend}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h4 className="text-lg font-medium text-gray-900 mb-4">Skill Scores</h4>
+                <div className="space-y-3">
+                  {[
+                    { name: 'Listening', score: child.skill_scores.listening, icon: <Eye className="w-5 h-5" /> },
+                    { name: 'Grasping', score: child.skill_scores.grasping, icon: <Brain className="w-5 h-5" /> },
+                    { name: 'Retention', score: child.skill_scores.retention, icon: <BookOpen className="w-5 h-5" /> },
+                    { name: 'Application', score: child.skill_scores.application, icon: <Target className="w-5 h-5" /> }
+                  ].map((skill, index) => (
+                    <div key={index} className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        {skill.icon}
+                        <span className="text-gray-700">{skill.name}</span>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <div className="w-32 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-indigo-600 h-2 rounded-full"
+                            style={{ width: `${skill.score}%` }}
+                          ></div>
+                        </div>
+                        <span className={`font-medium ${getScoreColor(skill.score)}`}>
+                          {skill.score.toFixed(0)}%
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-lg font-medium text-gray-900 mb-4">Areas Needing Attention</h4>
+                {child.weak_areas.length > 0 ? (
+                  <div className="space-y-3">
+                    {child.weak_areas.map((area, index) => (
+                      <div
+                        key={index}
+                        className={`p-3 rounded-lg border ${
+                          area.severity === 'high'
+                            ? 'border-red-200 bg-red-50'
+                            : 'border-yellow-200 bg-yellow-50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium capitalize text-gray-900">{area.skill}</span>
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            area.severity === 'high'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {area.severity} priority
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Current score: {area.score.toFixed(0)}%
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Award className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                    <p className="text-gray-600">Great job! No weak areas identified.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {children.length === 0 && (
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No Children Added</h3>
+          <p className="text-gray-600">Add your children to track their learning progress.</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Navigation Component
+const Navigation = ({ user, currentView, setCurrentView, onLogout }) => {
+  const navItems = {
+    student: [
+      { id: 'dashboard', label: 'Dashboard', icon: <Home className="w-5 h-5" /> },
+      { id: 'assessment', label: 'Take Assessment', icon: <Play className="w-5 h-5" /> },
+      { id: 'practice', label: 'Practice', icon: <BookOpen className="w-5 h-5" /> }
+    ],
+    teacher: [
+      { id: 'dashboard', label: 'Dashboard', icon: <Home className="w-5 h-5" /> },
+      { id: 'students', label: 'Students', icon: <Users className="w-5 h-5" /> },
+      { id: 'analytics', label: 'Analytics', icon: <TrendingUp className="w-5 h-5" /> }
+    ],
+    parent: [
+      { id: 'dashboard', label: 'Dashboard', icon: <Home className="w-5 h-5" /> },
+      { id: 'children', label: 'My Children', icon: <Users className="w-5 h-5" /> }
+    ]
+  };
+
+  const items = navItems[user.role] || [];
+
+  return (
+    <nav className="bg-white shadow-lg">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="flex justify-between h-16">
+          <div className="flex items-center">
+            <Brain className="w-8 h-8 text-indigo-600 mr-3" />
+            <span className="text-xl font-bold text-gray-900">AdaptLearn</span>
+          </div>
+          
+          <div className="flex items-center space-x-8">
+            {items.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setCurrentView(item.id)}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  currentView === item.id
+                    ? 'bg-indigo-100 text-indigo-700'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <User className="w-5 h-5 text-gray-600" />
+              <span className="text-sm text-gray-700">{user.name}</span>
+              <span className="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full capitalize">
+                {user.role}
+              </span>
+            </div>
+            <button
+              onClick={onLogout}
+              className="flex items-center space-x-1 text-gray-600 hover:text-red-600 transition-colors"
+            >
+              <LogOut className="w-5 h-5" />
+              <span className="text-sm">Logout</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+// Main App Component
+const AdaptiveAssessmentPlatform = () => {
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
+  const [currentView, setCurrentView] = useState('dashboard');
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
+    // Check for stored authentication
+    const storedToken = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    
+    if (storedToken && storedUser) {
+      setToken(storedToken);
+      setUser(JSON.parse(storedUser));
+    }
+
+    // Initialize database
+    const initDB = async () => {
+      try {
+        await apiService.initDatabase();
+        setIsInitialized(true);
+      } catch (error) {
+        console.error('Database initialization error:', error);
+        setIsInitialized(true); // Continue even if init fails
+      }
+    };
+
+    initDB();
+  }, []);
+
+  const handleLogin = (userData, userToken) => {
+    setUser(userData);
+    setToken(userToken);
+    setCurrentView('dashboard');
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    setToken(null);
+    setCurrentView('dashboard');
+  };
+
+  const renderContent = () => {
+    if (!user) return null;
+
+    switch (user.role) {
+      case 'student':
+        if (currentView === 'assessment') return <AssessmentComponent />;
+        return <StudentDashboard />;
+      case 'teacher':
+        return <TeacherDashboard />;
+      case 'parent':
+        return <ParentDashboard />;
+      default:
+        return <div>Invalid user role</div>;
+    }
+  };
+
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Initializing platform...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginForm onLogin={handleLogin} />;
+  }
+
+  return (
+    <AppContext.Provider value={{ user, token, currentView, setCurrentView }}>
+      <div className="min-h-screen bg-gray-50">
+        <Navigation 
+          user={user} 
+          currentView={currentView} 
+          setCurrentView={setCurrentView}
+          onLogout={handleLogout}
+        />
+        <main className="max-w-7xl mx-auto py-6 px-4">
+          {renderContent()}
+        </main>
+      </div>
+    </AppContext.Provider>
+  );
+};
+
+export default AdaptiveAssessmentPlatform;
