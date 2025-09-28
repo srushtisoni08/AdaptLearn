@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adaptive AI Assessment Platform</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link rel="stylesheet" href="../static/styles.css">
+    <script src="../static/script.js"></script>
+
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Adaptive AI Assessment Platform</h1>
+            <p>Revolutionizing education through personalized learning assessment. Moving beyond one-size-fits-all testing to identify specific learning challenges across four critical fundamentals: Listening, Grasping, Retention, and Application.</p>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('dashboard', event)">Student Dashboard</button>
+            <button class="nav-tab" onclick="switchTab('assessment', event)">Take Assessment</button>
+            <button class="nav-tab" onclick="switchTab('practice',event)">Practice Modes</button>
+            <button class="nav-tab" onclick="switchTab('analytics',event)">Analytics</button>
+        </div>
+
+        <!-- Student Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="student-grid">
+                <div class="student-card" onclick="selectStudent('Ram')">
+                    <div class="student-name">Ram Kumar</div>
+                    <div class="proficiency-bars">
+                        <div class="proficiency-item">
+                            <div class="proficiency-label">
+                                <span>Listening</span>
+                                <span>52%</span>
+                            </div>
+                            <div class="proficiency-bar">
+                                <div class="proficiency-fill listening" style="width: 52%"></div>
+                            </div>
+                        </div>
+                        <div class="proficiency-item">
+                            <div class="proficiency-label">
+                                <span>Grasping</span>
+                                <span>53%</span>
+                            </div>
+                            <div class="proficiency-bar">
+                                <div class="proficiency-fill grasping" style="width: 53%"></div>
+                            </div>
+                        </div>
+                        <div class="proficiency-item">
+                            <div class="proficiency-label">
+                                <span>Retention</span>
+                                <span>51%</span>
+                            </div>
+                            <div class="proficiency-bar">
+                                <div class="proficiency-fill retention" style="width: 51%"></div>
+                            </div>
+                        </div>
+                        <div class="proficiency-item">
+                            <div class="proficiency-label">
+                                <span>Application</span>
+                                <span>54%</span>
+                            </div>
+                            <div class="proficiency-bar">
+                                <div class="proficiency-fill application" style="width: 54%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="color: #27ae60; font-weight: 500;">Overall Performance: Good</div>
+                </div>
+
+                <div class="student-card" onclick="selectStudent('Shyam')">
+                    <div class="student-name">Shyam Patel</div>
+                    <div class="proficiency-bars">
+                        <div class="proficiency-item">
+                            <div class="proficiency-label">
+                                <span>Listening</span>
+                                <span>50%</span>
+                            </div>
+                            <div class="proficiency-bar">
+                                <div class="proficiency-fill listening" style="width: 50%"></div>
+                            </div>
+                        </div>
+                        <div class="proficiency-item">
+                            <div class="proficiency-label">
+                                <span>Grasping</span>
+                                <span>52%</span>
+                            </div>
+                            <div class="proficiency-bar">
+                                <div class="proficiency-fill grasping" style="width: 52%"></div>
+                            </div>
+                        </div>
+                        <div class="proficiency-item">
+                            <div class="proficiency-label">
+                                <span>Retention</span>
+                                <span>47%</span>
+                            </div>
+                            <div class="proficiency-bar">
+                                <div class="proficiency-fill retention" style="width: 47%"></div>
+                            </div>
+                        </div>
+                        <div class="proficiency-item">
+                            <div class="proficiency-label">
+                                <span>Application</span>
+                                <span>50%</span>
+                            </div>
+                            <div class="proficiency-bar">
+                                <div class="proficiency-fill application" style="width: 50%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="color: #f39c12; font-weight: 500;">Overall Performance: Average</div>
+                </div>
+
+                <div class="student-card" onclick="selectStudent('Sanga')">
+                    <div class="student-name">Sanga Singh</div>
+                    <div class="proficiency-bars">
+                        <div class="proficiency-item">
+                            <div class="proficiency-label">
+                                <span>Listening</span>
+                                <span>50%</span>
+                            </div>
+                            <div class="proficiency-bar">
+                                <div class="proficiency-fill listening" style="width: 50%"></div>
+                            </div>
+                        </div>
+                        <div class="proficiency-item">
+                            <div class="proficiency-label">
+                                <span>Grasping</span>
+                                <span>47%</span>
+                            </div>
+                            <div class="proficiency-bar">
+                                <div class="proficiency-fill grasping" style="width: 47%"></div>
+                            </div>
+                        </div>
+                        <div class="proficiency-item">
+                            <div class="proficiency-label">
+                                <span>Retention</span>
+                                <span>50%</span>
+                            </div>
+                            <div class="proficiency-bar">
+                                <div class="proficiency-fill retention" style="width: 50%"></div>
+                            </div>
+                        </div>
+                        <div class="proficiency-item">
+                            <div class="proficiency-label">
+                                <span>Application</span>
+                                <span>46%</span>
+                            </div>
+                            <div class="proficiency-bar">
+                                <div class="proficiency-fill application" style="width: 46%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="color: #e74c3c; font-weight: 500;">Overall Performance: Needs Improvement</div>
+                </div>
+            </div>
+
+            <div class="recommendations">
+                <h2>Personalized Recommendations</h2>
+                <div id="student-recommendations">
+                    <p>Click on a student card above to view personalized recommendations and detailed analysis.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assessment Tab -->
+        <div id="assessment" class="tab-content">
+            <div class="assessment-interface">
+                <h2>Adaptive Assessment</h2>
+                <div id="current-question" class="question-card" style="display: none;">
+                    <div class="question-meta">
+                        <span id="question-fundamental">Fundamental: Loading...</span>
+                        <span id="question-difficulty">Difficulty: Loading...</span>
+                        <span id="question-progress">Question 1 of 10</span>
+                    </div>
+                    <div id="question-text" class="question-text">Loading question...</div>
+                    <div id="answer-options" class="answer-options"></div>
+                    <div class="action-buttons">
+                        <button id="submit-answer" class="btn btn-primary" onclick="submitAnswer()" disabled>Submit Answer</button>
+                        <button id="next-question" class="btn btn-success" onclick="nextQuestion()" style="display: none;">Next Question</button>
+                    </div>
+                    <div id="question-feedback" class="feedback-section" style="display: none;"></div>
+                </div>
+
+                <div id="assessment-start" class="question-card">
+                    <h3>Start Your Adaptive Assessment</h3>
+                    <p>This assessment will adapt to your responses, providing questions that match your learning level across four key fundamentals:</p>
+                    <ul style="margin: 15px 0; padding-left: 30px;">
+                        <li><strong>Listening:</strong> Concentration and attention during instruction</li>
+                        <li><strong>Grasping:</strong> Understanding and comprehending concepts</li>
+                        <li><strong>Retention:</strong> Memory and recall of learned material</li>
+                        <li><strong>Application:</strong> Applying concepts in different situations</li>
+                    </ul>
+                    <div class="action-buttons">
+                        <select id="student-select" class="btn" style="background: white; color: #333; border: 2px solid #667eea;">
+                            <option value="">Select Student</option>
+                            <option value="Ram">Ram Kumar</option>
+                            <option value="Shyam">Shyam Patel</option>
+                            <option value="Sanga">Sanga Singh</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="startAssessment()">Begin Assessment</button>
+                    </div>
+                </div>
+
+                <div id="assessment-complete" class="question-card" style="display: none;">
+                    <h3>Assessment Complete!</h3>
+                    <div id="final-results"></div>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" onclick="resetAssessment()">Take Another Assessment</button>
+                        <button class="btn btn-secondary" onclick="switchTab('analytics')">View Detailed Analytics</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Practice Modes Tab -->
+        <div id="practice" class="tab-content">
+            <div class="practice-modes">
+                <div class="practice-mode" onclick="startPractice('adaptive')">
+                    <h3>🎯 Adaptive Practice</h3>
+                    <p>Questions automatically adjust to your skill level</p>
+                </div>
+                <div class="practice-mode" onclick="startPractice('targeted')">
+                    <h3>🎪 Targeted Practice</h3>
+                    <p>Focus on your weakest fundamental areas</p>
+                </div>
+                <div class="practice-mode" onclick="startPractice('mixed')">
+                    <h3>🌊 Mixed Practice</h3>
+                    <p>Random questions from multiple chapters</p>
+                </div>
+                <div class="practice-mode" onclick="startPractice('custom')">
+                    <h3>⚙️ Custom Practice</h3>
+                    <p>Choose your difficulty and topics</p>
+                </div>
+            </div>
+
+            <div class="assessment-interface" style="margin-top: 30px;">
+                <h3>Practice Session</h3>
+                <div id="practice-content">
+                    <p>Select a practice mode above to begin your personalized learning session.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Tab -->
+        <div id="analytics" class="tab-content">
+            <div class="progress-section">
+                <h2>Learning Analytics Dashboard</h2>
+                <div class="chart-container">
+                    <canvas id="progressChart"></canvas>
+                </div>
+            </div>
+
+            <div class="progress-section">
+                <h3>Performance Comparison</h3>
+                <div class="chart-container">
+                    <canvas id="comparisonChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>  
