@@ -10,7 +10,7 @@ from functools import wraps
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///adaptlearn.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://<username>:<password>@localhost:5432/<dbname>'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -143,6 +143,10 @@ def token_required(f):
             
         return f(current_user, *args, **kwargs)
     return decorated
+
+@app.route('/')
+def home():
+    return {"message": "AdaptLearn API is running!"}
 
 # Authentication Routes
 @app.route('/api/register', methods=['POST'])
