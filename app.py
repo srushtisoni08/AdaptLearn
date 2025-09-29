@@ -7,8 +7,10 @@ import jwt
 import random
 import json
 from functools import wraps
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://<username>:<password>@localhost:5432/<dbname>'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -26,28 +28,24 @@ class User(db.Model):
     name = db.Column(db.String(100), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Relationships
-    student_profile = db.relationship('StudentProfile', backref='user', uselist=False)
-    teacher_profile = db.relationship('TeacherProfile', backref='user', uselist=False)
-    parent_profile = db.relationship('ParentProfile', backref='user', uselist=False)
+    # Specify which foreign key is used for each relationship
+    student_profile = db.relationship('StudentProfile', backref='user', uselist=False, foreign_keys='StudentProfile.user_id')
+    teacher_profile = db.relationship('TeacherProfile', backref='user', uselist=False, foreign_keys='TeacherProfile.user_id')
+    parent_profile = db.relationship('ParentProfile', backref='user', uselist=False, foreign_keys='ParentProfile.user_id')
 
 class StudentProfile(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     grade = db.Column(db.String(10))
     school = db.Column(db.String(100))
-    parent_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    
-    # Learning Analytics
+    parent_id = db.Column(db.Integer, db.ForeignKey('parent_profile.id'))
     listening_score = db.Column(db.Float, default=50.0)
     grasping_score = db.Column(db.Float, default=50.0)
     retention_score = db.Column(db.Float, default=50.0)
     application_score = db.Column(db.Float, default=50.0)
     overall_level = db.Column(db.Integer, default=1)
-    
-    # Relationships
-    assessments = db.relationship('Assessment', backref='student')
-    practice_sessions = db.relationship('PracticeSession', backref='student')
+    assessments = db.relationship('Assessment', backref='student', cascade='all, delete-orphan')
+    practice_sessions = db.relationship('PracticeSession', backref='student', cascade='all, delete-orphan')
 
 class TeacherProfile(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -61,7 +59,7 @@ class TeacherProfile(db.Model):
 class ParentProfile(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    children = db.relationship('StudentProfile', foreign_keys=[StudentProfile.parent_id], backref='parent')
+    children = db.relationship('StudentProfile', backref='parent', cascade='all, delete-orphan')
 
 # Association table for teacher-student relationship
 teacher_student = db.Table('teacher_student',
