@@ -17,35 +17,45 @@ const LoginForm = ({ onLogin }) => {
     const [error, setError] = useState('');
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setError('');
+    e.preventDefault();
+    setLoading(true);
+    setError('');
 
-        try {
-            let result;
-            if (isLogin) {
+    try {
+        let result;
+        if (isLogin) {
+            result = await apiService.login({ email: formData.email, password: formData.password });
+        } else {
+            // Prepare registration payload
+            const registrationData = { ...formData };
+
+            // If teacher, add subjects automatically
+            if (formData.role === 'teacher') {
+                registrationData.subjects = ["Math", "Science"]; // You can customize or add form input for this later
+            }
+
+            result = await apiService.register(registrationData);
+
+            if (result.message === 'User registered successfully') {
                 result = await apiService.login({ email: formData.email, password: formData.password });
-            } else {
-                result = await apiService.register(formData);
-                if (result.message === 'User registered successfully') {
-                    result = await apiService.login({ email: formData.email, password: formData.password });
-                }
             }
-
-            if (result.token) {
-                localStorage.setItem('token', result.token);
-                localStorage.setItem('user', JSON.stringify(result.user));
-                onLogin(result.user, result.token);
-            } else {
-                setError(result.message || 'Authentication failed');
-            }
-        } catch (err) {
-            setError('Network error. Please try again.');
-            console.error('Auth error:', err);
         }
 
-        setLoading(false);
-    };
+        if (result.token) {
+            localStorage.setItem('token', result.token);
+            localStorage.setItem('user', JSON.stringify(result.user));
+            onLogin(result.user, result.token);
+        } else {
+            setError(result.message || 'Authentication failed');
+        }
+    } catch (err) {
+        setError('Network error. Please try again.');
+        console.error('Auth error:', err);
+    }
+
+    setLoading(false);
+};
+
 
     const handleInputChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
