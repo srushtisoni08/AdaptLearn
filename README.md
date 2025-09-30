@@ -8,7 +8,6 @@ AdaptLearn is an AI-powered adaptive learning platform for school students. It p
 - [Tech Stack](#tech-stack)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Contributing](#contributing)
 - [License](#license)
 
 ## Features
@@ -85,3 +84,5 @@ http://localhost:5173
 - Track progress and identify weak areas.
 - Teachers/admins can manage questions and view analytics.
 
+## License
+- This project is licensed under the MIT License.
